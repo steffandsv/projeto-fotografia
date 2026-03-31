@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Projeto Mágico ✨ Galeria de Fotos</title>
+  <meta name="description" content="Galeria de fotos do Projeto Mágico. Veja as fotos mais lindas e crie seu cartão de Páscoa personalizado!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══ FLOATING DECORATIONS ═══ -->
+  <div class="floating-decorations" id="floating-decorations" aria-hidden="true"></div>
+
+  <!-- ═══ HERO ═══ -->
+  <header class="hero" id="hero">
+    <div class="hero-sparkles" aria-hidden="true">
+      <span class="sparkle s1">✦</span>
+      <span class="sparkle s2">✧</span>
+      <span class="sparkle s3">♡</span>
+      <span class="sparkle s4">✦</span>
+      <span class="sparkle s5">🌸</span>
+      <span class="sparkle s6">✧</span>
+      <span class="sparkle s7">🐣</span>
+      <span class="sparkle s8">♡</span>
+    </div>
+    <div class="hero-content">
+      <div class="hero-bunny">🐰</div>
+      <h1 class="hero-title">
+        <span class="hero-sub">Projeto</span>
+        <span class="hero-main">Mágico</span>
+      </h1>
+      <p class="hero-tagline">Momentos especiais que guardamos no coração 💖</p>
+      <button class="hero-cta" id="hero-cta" onclick="document.getElementById('albums-section').scrollIntoView({behavior:'smooth'})">
+        <span>Ver Álbuns</span>
+        <span class="cta-arrow">↓</span>
+      </button>
+    </div>
+    <div class="hero-wave" aria-hidden="true">
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+        <path d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,80 1440,60 L1440,120 L0,120 Z" fill="currentColor"/>
+      </svg>
+    </div>
+  </header>
+
+  <!-- ═══ ALBUMS LISTING ═══ -->
+  <section class="albums-section" id="albums-section">
+    <div class="container">
+      <h2 class="section-title">
+        <span class="title-emoji">📸</span>
+        <span>Nossos Álbuns</span>
+      </h2>
+      <div class="albums-grid" id="albums-grid">
+        <!-- JS loads here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ GALLERY (shown when album is opened) ═══ -->
+  <section class="gallery-section hidden" id="gallery-section">
+    <div class="container">
+      <div class="gallery-header">
+        <button class="btn-back" id="btn-back" aria-label="Voltar">
+          <span class="back-icon">←</span>
+          <span>Voltar</span>
+        </button>
+        <h2 class="gallery-title" id="gallery-title"></h2>
+      </div>
+
+      <div class="gallery-actions" id="gallery-actions">
+        <button class="btn-cute btn-easter-card" id="btn-card">
+          <span class="btn-emoji">🐣</span>
+          <span>Cartão de Páscoa</span>
+        </button>
+      </div>
+
+      <div class="photo-grid" id="photo-grid">
+        <!-- JS loads here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ LIGHTBOX ═══ -->
+  <div class="lightbox hidden" id="lightbox">
+    <div class="lightbox-backdrop" id="lightbox-backdrop"></div>
+    <button class="lightbox-close" id="lightbox-close" aria-label="Fechar">✕</button>
+    <button class="lightbox-nav lb-prev" id="lb-prev" aria-label="Anterior">‹</button>
+    <button class="lightbox-nav lb-next" id="lb-next" aria-label="Próximo">›</button>
+    <div class="lightbox-body">
+      <img class="lightbox-img" id="lightbox-img" src="" alt="Foto">
+    </div>
+    <div class="lightbox-footer">
+      <a class="btn-cute btn-download-single" id="lightbox-download" href="#" download>
+        <span class="btn-emoji">📥</span>
+        <span>Baixar esta foto</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══ CARD MODAL ═══ -->
+  <div class="modal hidden" id="card-modal">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-sheet" id="modal-sheet">
+      <div class="modal-handle" aria-hidden="true"></div>
+      <button class="modal-close-btn" id="modal-close" aria-label="Fechar">✕</button>
+
+      <div class="modal-header">
+        <div class="modal-bunny">🐰</div>
+        <h3 class="modal-title">Cartão de Páscoa</h3>
+        <p class="modal-desc">Toque em <strong>uma foto</strong> para criar seu cartão mágico ✨</p>
+      </div>
+
+      <div class="modal-grid" id="modal-grid">
+        <!-- JS loads here -->
+      </div>
+
+      <div class="modal-preview hidden" id="modal-preview">
+        <p class="preview-label">📷 Foto escolhida:</p>
+        <img class="preview-thumb" id="preview-thumb" src="" alt="Preview">
+      </div>
+
+      <button class="btn-cute btn-generate" id="btn-generate" disabled>
+        <span class="btn-emoji">✨</span>
+        <span>Gerar Cartão de Páscoa</span>
+      </button>
+
+      <div class="modal-loading hidden" id="modal-loading">
+        <div class="cute-loader">
+          <span>🐣</span><span>🐰</span><span>🥚</span>
+        </div>
+        <p>Criando seu cartão mágico...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="footer-emojis" aria-hidden="true">🐰 🌸 🐣 🥚 💖</div>
+    <p>Projeto Mágico • Feito com muito amor 💖</p>
+  </footer>
+
+  <!-- pdf-lib CDN (client-side PDF manipulation) -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
