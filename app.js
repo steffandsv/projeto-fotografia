@@ -5,10 +5,14 @@
 
 // ── State ────────────────────────────────────────────────────
 let albumsData = [];
+let hierarchicalData = {};
+let currentSchool = null;
 let currentAlbum = null;
 let photos = [];
 let lightboxIndex = -1;
 let cardSelectedPhoto = null;
+let selectedPhotos = new Set();
+let isSelectMode = false;
 
 // ── DOM ──────────────────────────────────────────────────────
 const $ = (s) => document.querySelector(s);
@@ -46,8 +50,20 @@ function createFloatingDecorations() {
 // EVENT BINDING
 // ═══════════════════════════════════════════════════════════════
 function bindEvents() {
-  $('#btn-back').addEventListener('click', showAlbumsView);
+  $('#btn-back-to-schools').addEventListener('click', showSchoolsView);
+  $('#btn-back-to-classes').addEventListener('click', () => {
+    if (currentSchool && currentSchool.classes && currentSchool.classes.length > 0) {
+      showClassesView(currentSchool.name);
+    } else {
+      showSchoolsView();
+    }
+  });
   $('#btn-card').addEventListener('click', openCardModal);
+  
+  // Multi-select
+  $('#btn-select-mode').addEventListener('click', toggleSelectMode);
+  $('#btn-cancel-selection').addEventListener('click', cancelSelectMode);
+  $('#btn-share-whatsapp').addEventListener('click', shareSelectedWhatsApp);
 
   // Lightbox
   $('#lightbox-close').addEventListener('click', closeLightbox);
@@ -90,7 +106,7 @@ function bindEvents() {
 // LOAD ALBUMS (from static albums.json)
 // ═══════════════════════════════════════════════════════════════
 async function loadAlbums() {
-  const grid = $('#albums-grid');
+  const grid = $('#schools-grid');
   grid.innerHTML = '<div class="skeleton" style="height:200px;"></div>';
 
   try {
@@ -106,20 +122,24 @@ async function loadAlbums() {
       return;
     }
 
-    grid.innerHTML = albumsData.map((album, i) => {
-      const coverPath = album.folder + '/' + album.photos[0];
-      return `
-        <div class="album-card" style="animation-delay:${i * 0.12}s" onclick="openAlbum('${album.folder}')">
-          <div class="album-cover-wrap">
-            <img class="album-cover" src="${coverPath}" alt="${album.displayName}" loading="lazy">
-            <div class="album-badge">📷 ${album.photos.length}</div>
-          </div>
-          <div class="album-info">
-            <span class="album-name">${album.displayName}</span>
-            <span class="album-arrow">→</span>
-          </div>
-        </div>`;
-    }).join('');
+    // Parse hierarchy: School -> Class -> Photos
+    albumsData.forEach(album => {
+      const parts = album.folder.split('/');
+      const schoolName = parts[0];
+      const className = parts.length > 1 ? parts.slice(1).join('/') : null;
+
+      if (!hierarchicalData[schoolName]) {
+        hierarchicalData[schoolName] = { name: schoolName, classes: [], directAlbum: null };
+      }
+
+      if (className) {
+        hierarchicalData[schoolName].classes.push({ ...album, className: className });
+      } else {
+        hierarchicalData[schoolName].directAlbum = album;
+      }
+    });
+
+    renderSchools();
 
   } catch (err) {
     console.error('Error loading albums:', err);
@@ -132,9 +152,92 @@ async function loadAlbums() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ALBUM VIEW
+// NESTED NAVIGATION (School -> Classes -> Gallery)
 // ═══════════════════════════════════════════════════════════════
-function openAlbum(folderName) {
+
+function renderSchools() {
+  const grid = $('#schools-grid');
+  const schools = Object.keys(hierarchicalData);
+
+  grid.innerHTML = schools.map((schoolName, i) => {
+    const school = hierarchicalData[schoolName];
+    // Determine a cover image representing the school
+    let coverPath = '';
+    let totalPhotos = 0;
+    if (school.classes.length > 0) {
+      coverPath = school.classes[0].folder + '/' + school.classes[0].photos[0];
+      totalPhotos = school.classes.reduce((sum, c) => sum + c.photos.length, 0);
+    } else if (school.directAlbum) {
+      coverPath = school.directAlbum.folder + '/' + school.directAlbum.photos[0];
+      totalPhotos = school.directAlbum.photos.length;
+    }
+
+    return `
+      <div class="album-card" style="animation-delay:${i * 0.12}s" onclick="handleSchoolClick('${schoolName}')">
+        <div class="album-cover-wrap">
+          <img class="album-cover" src="${coverPath}" alt="${schoolName}" loading="lazy">
+          <div class="album-badge">📷 ${totalPhotos}</div>
+        </div>
+        <div class="album-info">
+          <span class="album-name">${schoolName}</span>
+          <span class="album-arrow">→</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function handleSchoolClick(schoolName) {
+  currentSchool = hierarchicalData[schoolName];
+  if (currentSchool.classes.length > 0) {
+    showClassesView(schoolName);
+  } else if (currentSchool.directAlbum) {
+    // Escolas como Arcanjo sem turmas, vai direto para a galeria
+    openGallery(currentSchool.directAlbum.folder, currentSchool.name);
+  }
+}
+
+function showSchoolsView() {
+  $('#gallery-section').classList.add('hidden');
+  $('#classes-section').classList.add('hidden');
+  $('#hero').classList.remove('hidden');
+  $('#albums-section').classList.remove('hidden');
+  currentSchool = null;
+  currentAlbum = null;
+  photos = [];
+  cancelSelectMode();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showClassesView(schoolName) {
+  const school = hierarchicalData[schoolName];
+  $('#hero').classList.add('hidden');
+  $('#albums-section').classList.add('hidden');
+  $('#gallery-section').classList.add('hidden');
+  $('#classes-section').classList.remove('hidden');
+  cancelSelectMode();
+  
+  $('#classes-title').textContent = `Turmas - ${schoolName}`;
+
+  const grid = $('#classes-grid');
+  grid.innerHTML = school.classes.map((cls, i) => {
+    const coverPath = cls.folder + '/' + cls.photos[0];
+    return `
+      <div class="album-card" style="animation-delay:${i * 0.12}s" onclick="openGallery('${cls.folder}', '${schoolName} > ${cls.className}')">
+        <div class="album-cover-wrap">
+          <img class="album-cover" src="${coverPath}" alt="${cls.className}" loading="lazy">
+          <div class="album-badge">📷 ${cls.photos.length}</div>
+        </div>
+        <div class="album-info">
+          <span class="album-name">${cls.className}</span>
+          <span class="album-arrow">→</span>
+        </div>
+      </div>`;
+  }).join('');
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openGallery(folderName, navTitle) {
   const album = albumsData.find(a => a.folder === folderName);
   if (!album) return;
 
@@ -144,12 +247,13 @@ function openAlbum(folderName) {
     url: album.folder + '/' + fname
   }));
 
-  // Switch views
   $('#hero').classList.add('hidden');
   $('#albums-section').classList.add('hidden');
+  $('#classes-section').classList.add('hidden');
   $('#gallery-section').classList.remove('hidden');
-  $('#gallery-title').textContent = album.displayName;
+  $('#gallery-title').textContent = navTitle || album.displayName;
 
+  cancelSelectMode();
   renderPhotoGrid();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -157,21 +261,109 @@ function openAlbum(folderName) {
 function renderPhotoGrid() {
   const grid = $('#photo-grid');
   grid.innerHTML = photos.map((photo, i) => `
-    <div class="photo-card" style="animation-delay:${i * 0.04}s" onclick="openLightbox(${i})">
+    <div class="photo-card" id="photo-card-${i}" style="animation-delay:${i * 0.04}s" onclick="handlePhotoClick(${i})">
+      <div class="photo-checkbox">✓</div>
       <img class="photo-thumb" src="${photo.url}" alt="Foto ${i + 1}" loading="lazy">
       <div class="photo-download-hint">📥</div>
     </div>
   `).join('');
 }
 
-function showAlbumsView() {
-  $('#gallery-section').classList.add('hidden');
-  $('#hero').classList.remove('hidden');
-  $('#albums-section').classList.remove('hidden');
-  currentAlbum = null;
-  photos = [];
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// ═══════════════════════════════════════════════════════════════
+// MULTI-SELECT & SHARE
+// ═══════════════════════════════════════════════════════════════
+
+function toggleSelectMode() {
+  isSelectMode = !isSelectMode;
+  const grid = $('#photo-grid');
+  if (isSelectMode) {
+    grid.classList.add('select-mode-active');
+    $('#btn-select-mode').innerHTML = '<span class="btn-emoji">✖</span><span>Cancelar Seleção</span>';
+    $('#btn-card').classList.add('hidden');
+    updateFab();
+  } else {
+    cancelSelectMode();
+  }
 }
+
+function cancelSelectMode() {
+  isSelectMode = false;
+  selectedPhotos.clear();
+  $('#photo-grid').classList.remove('select-mode-active');
+  $('#btn-select-mode').innerHTML = '<span class="btn-emoji">✓</span><span>Selecionar</span>';
+  $('#btn-card').classList.remove('hidden');
+  $$('#photo-grid .photo-card').forEach(el => el.classList.remove('selected'));
+  $('#fab-bar').classList.add('hidden');
+}
+
+function handlePhotoClick(index) {
+  if (isSelectMode) {
+    const card = $(`#photo-card-${index}`);
+    if (selectedPhotos.has(index)) {
+      selectedPhotos.delete(index);
+      card.classList.remove('selected');
+    } else {
+      selectedPhotos.add(index);
+      card.classList.add('selected');
+    }
+    updateFab();
+  } else {
+    openLightbox(index);
+  }
+}
+
+function updateFab() {
+  const count = selectedPhotos.size;
+  const fab = $('#fab-bar');
+  if (count > 0) {
+    fab.classList.remove('hidden');
+    $('#fab-count').textContent = count === 1 ? '1 foto selecionada' : `${count} fotos selecionadas`;
+  } else {
+    fab.classList.add('hidden');
+  }
+}
+
+async function shareSelectedWhatsApp() {
+  if (selectedPhotos.size === 0) return;
+  const filesArray = [];
+  
+  // Show Loading feedback on button
+  const shareBtn = $('#btn-share-whatsapp');
+  const oldHTML = shareBtn.innerHTML;
+  shareBtn.innerHTML = '<span class="btn-emoji">⏳</span><span>Preparando...</span>';
+  shareBtn.disabled = true;
+
+  try {
+    for (const index of selectedPhotos) {
+      const p = photos[index];
+      const response = await fetch(p.url);
+      const blob = await response.blob();
+      const file = new File([blob], p.name, { type: blob.type });
+      filesArray.push(file);
+    }
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: filesArray })) {
+      await navigator.share({
+        files: filesArray,
+        title: 'Fotos - Projeto Mágico',
+        text: 'Veja as fotos do Projeto Mágico! ✨'
+      });
+      showToast('Compartilhado com sucesso! 💖', 'success');
+    } else {
+      showToast('Seu navegador não suporta envio direto de várias fotos 😿. Baixe-as primeiro.', 'error');
+    }
+  } catch (error) {
+    console.error('Compartilhamento falhou', error);
+    if (error.name !== 'AbortError') {
+      showToast('Erro ao tentar compartilhar as imagens.', 'error');
+    }
+  } finally {
+    shareBtn.innerHTML = oldHTML;
+    shareBtn.disabled = false;
+    cancelSelectMode();
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════════
 // LIGHTBOX (with individual download)
@@ -250,6 +442,36 @@ function selectCardPhoto(index, el) {
 // ═══════════════════════════════════════════════════════════════
 // GENERATE EASTER CARD (100% client-side with pdf-lib!)
 // ═══════════════════════════════════════════════════════════════
+
+// Utils para cortar a imagem para 1:1 se for formato retrato (altura > largura)
+function getPreparedImageBlob(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      // Se for retrato (altura > largura), criamos um canvas quadrado para cortar o meio
+      if (img.height > img.width) {
+        const size = img.width;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // Ponto de corte Y para centralizar (pega o meio da altura maior)
+        const srcY = (img.height - size) / 2;
+        ctx.drawImage(img, 0, srcY, size, size, 0, 0, size, size);
+        
+        canvas.toBlob(blob => resolve({ blob, format: 'image/jpeg' }), 'image/jpeg', 0.95);
+      } else {
+        // Usa a imagem original sem cortes
+        fetch(url).then(r => r.blob()).then(blob => resolve({ blob, format: blob.type })).catch(reject);
+      }
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 async function generateCard() {
   if (!cardSelectedPhoto) return;
 
@@ -263,17 +485,17 @@ async function generateCard() {
     const pdfResponse = await fetch(pdfUrl);
     const pdfBytes = await pdfResponse.arrayBuffer();
 
-    // 2. Load the selected photo
-    const imgResponse = await fetch(cardSelectedPhoto.url);
-    const imgBytes = await imgResponse.arrayBuffer();
+    // 2. Prepare the photo (square crop if portrait)
+    const { blob: imgBlob, format } = await getPreparedImageBlob(cardSelectedPhoto.url);
+    const imgBytes = await imgBlob.arrayBuffer();
 
-    // 3. Determine image type and embed
+    // 3. Embed in PDF
     const { PDFDocument } = PDFLib;
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
     let image;
-    const fileName = cardSelectedPhoto.name.toLowerCase();
-    if (fileName.endsWith('.png')) {
+    // O canvas exporta jpeg. Caso traga a original, pode ser png ou jpeg
+    if (format === 'image/png' || cardSelectedPhoto.name.toLowerCase().endsWith('.png')) {
       image = await pdfDoc.embedPng(imgBytes);
     } else {
       image = await pdfDoc.embedJpg(imgBytes);
@@ -319,8 +541,8 @@ async function generateCard() {
 
     // 9. Save and download
     const modifiedPdfBytes = await pdfDoc.save();
-    const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
+    const pdfBlob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(pdfBlob);
 
     const a = document.createElement('a');
     a.href = url;

@@ -46,14 +46,30 @@
     </div>
   </header>
 
-  <!-- ═══ ALBUMS LISTING ═══ -->
+  <!-- ═══ SCHOOLS LISTING (formerly ALBUMS) ═══ -->
   <section class="albums-section" id="albums-section">
     <div class="container">
       <h2 class="section-title">
-        <span class="title-emoji">📸</span>
-        <span>Nossos Álbuns</span>
+        <span class="title-emoji">🏫</span>
+        <span>Escolha a Escola</span>
       </h2>
-      <div class="albums-grid" id="albums-grid">
+      <div class="albums-grid" id="schools-grid">
+        <!-- JS loads here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CLASSES LISTING (shown when school has classes) ═══ -->
+  <section class="albums-section hidden" id="classes-section">
+    <div class="container">
+      <div class="gallery-header">
+        <button class="btn-back" id="btn-back-to-schools" aria-label="Voltar">
+          <span class="back-icon">←</span>
+          <span>Voltar</span>
+        </button>
+        <h2 class="gallery-title" id="classes-title">Turmas</h2>
+      </div>
+      <div class="albums-grid" id="classes-grid">
         <!-- JS loads here -->
       </div>
     </div>
@@ -63,7 +79,7 @@
   <section class="gallery-section hidden" id="gallery-section">
     <div class="container">
       <div class="gallery-header">
-        <button class="btn-back" id="btn-back" aria-label="Voltar">
+        <button class="btn-back" id="btn-back-to-classes" aria-label="Voltar">
           <span class="back-icon">←</span>
           <span>Voltar</span>
         </button>
@@ -75,10 +91,26 @@
           <span class="btn-emoji">🐣</span>
           <span>Cartão de Páscoa</span>
         </button>
+        <button class="btn-cute btn-select-mode" id="btn-select-mode">
+          <span class="btn-emoji">✓</span>
+          <span>Selecionar</span>
+        </button>
       </div>
 
       <div class="photo-grid" id="photo-grid">
         <!-- JS loads here -->
+      </div>
+    </div>
+    
+    <!-- ═══ FLOATING ACTION BAR FOR MULTI-SELECT ═══ -->
+    <div class="fab-bar hidden" id="fab-bar">
+      <span class="fab-count" id="fab-count">0 fotos</span>
+      <div class="fab-buttons">
+        <button class="btn-cute btn-fab" id="btn-share-whatsapp">
+          <span class="btn-emoji">💬</span>
+          <span>WhatsApp</span>
+        </button>
+        <button class="btn-cute btn-fab-cancel" id="btn-cancel-selection">Cancelar</button>
       </div>
     </div>
   </section>

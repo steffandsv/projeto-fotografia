@@ -584,6 +584,113 @@ button { font-family: inherit; }
   transform: scale(1);
 }
 
+/* Multi-select checkmark */
+.photo-checkbox {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 14px;
+  transition: all 0.2s;
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.select-mode-active .photo-card {
+  cursor: pointer;
+}
+
+.select-mode-active .photo-checkbox {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.photo-card.selected .photo-checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  transform: scale(1.1);
+}
+
+.photo-card.selected .photo-thumb {
+  transform: scale(0.92);
+  border-radius: var(--radius);
+  opacity: 0.85;
+}
+
+.select-mode-active .photo-card:hover .photo-download-hint {
+  display: none !important; /* hide download hint in select mode */
+}
+
+/* ═══ FAB BAR (Floating Action Bar) ═══ */
+.fab-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  z-index: 800;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  padding: 12px 16px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 90%;
+  max-width: 400px;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fab-bar:not(.hidden) {
+  transform: translateX(-50%) translateY(0);
+}
+
+.fab-count {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.fab-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-fab {
+  flex: 1;
+  background: linear-gradient(135deg, #25D366, #128C7E); /* whatsapp colors */
+  color: white;
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+}
+
+.btn-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+}
+
+.btn-fab-cancel {
+  flex: 0.7;
+  background: var(--pink-100);
+  color: var(--accent);
+}
+
+.btn-fab-cancel:hover {
+  background: var(--pink-200);
+}
+
 /* Stagger delays */
 .photo-card:nth-child(1) { animation-delay: 0.02s; }
 .photo-card:nth-child(2) { animation-delay: 0.06s; }
