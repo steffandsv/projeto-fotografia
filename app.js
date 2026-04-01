@@ -443,35 +443,6 @@ function selectCardPhoto(index, el) {
 // GENERATE EASTER CARD (100% client-side with pdf-lib!)
 // ═══════════════════════════════════════════════════════════════
 
-// Utils para cortar a imagem para 1:1 se for formato retrato (altura > largura)
-function getPreparedImageBlob(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      // Se for retrato (altura > largura), criamos um canvas quadrado para cortar o meio
-      if (img.height > img.width) {
-        const size = img.width;
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        
-        // Ponto de corte Y para centralizar (pega o meio da altura maior)
-        const srcY = (img.height - size) / 2;
-        ctx.drawImage(img, 0, srcY, size, size, 0, 0, size, size);
-        
-        canvas.toBlob(blob => resolve({ blob, format: 'image/jpeg' }), 'image/jpeg', 0.95);
-      } else {
-        // Usa a imagem original sem cortes
-        fetch(url).then(r => r.blob()).then(blob => resolve({ blob, format: blob.type })).catch(reject);
-      }
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
 async function generateCard() {
   if (!cardSelectedPhoto) return;
 
@@ -485,8 +456,10 @@ async function generateCard() {
     const pdfResponse = await fetch(pdfUrl);
     const pdfBytes = await pdfResponse.arrayBuffer();
 
-    // 2. Prepare the photo (square crop if portrait)
-    const { blob: imgBlob, format } = await getPreparedImageBlob(cardSelectedPhoto.url);
+    // 2. Prepare the photo (original size)
+    const imgResponse = await fetch(cardSelectedPhoto.url);
+    const imgBlob = await imgResponse.blob();
+    const format = imgBlob.type;
     const imgBytes = await imgBlob.arrayBuffer();
 
     // 3. Embed in PDF
