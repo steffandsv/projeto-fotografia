@@ -57,7 +57,7 @@ jobs:
             
             # 4. Refaz a build do container e roda em background!
             echo "🐳 Recarregando os containers Docker na porta 4111..."
-            docker-compose up -d --build
+            docker compose up -d --build
             
             # 5. Limites e espaço (Opcional - limpa imagens desligadas para economizar disco do servidor)
             docker image prune -f
