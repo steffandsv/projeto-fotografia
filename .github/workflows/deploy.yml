@@ -1,0 +1,65 @@
+name: Deploy para Produção (Docker SSH)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executar deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          # Mapeamento seguro das secrets para variáveis de ambiente na action
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        with:
+          host: 187.84.121.114
+          port: 2222
+          username: steffan
+          password: ${{ secrets.SERVER_PASSWORD }}
+          
+          # Avisa o ssh-action para repassar essas variáveis pro script abaixo
+          envs: GIT_TOKEN
+          
+          script: |
+            # Caminho onde o site será hospedado no servidor
+            PROJECT_DIR="/home/steffan/pascoa.jaborandi.sp.gov.br"
+            
+            echo "🚀 Iniciando deploy no servidor..."
+            
+            # 1. Verifica se a pasta existe. Se não, clona.
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
+              echo "Aviso: Pasta do projeto não existe. Configurando pela primeira vez..."
+              
+              # Tenta criar a pasta e entrar
+              mkdir -p $PROJECT_DIR
+              
+              # Usa o token para baixar mesmo que seja repositório privado
+              # Nota: Se for repo público, o token não faria diferença, mas sendo credencial do Github, evitamos proms.
+              git clone https://$GIT_TOKEN@github.com/${{ github.repository }}.git $PROJECT_DIR
+            fi
+            
+            cd $PROJECT_DIR
+            
+            # 2. Puxa as atualizações de fotos e código da branch main
+            echo "⬇️ Atualizando arquivos..."
+            git fetch --all
+            git reset --hard origin/main
+            
+            # 3. Dumpa as secrets num arquivo .env (mantido para qualquer variável de ambiente futura)
+            echo "🔐 Gerando arquivo .env local..."
+            cat <<EOF > .env
+            NODE_ENV=production
+            EOF
+            
+            # 4. Refaz a build do container e roda em background!
+            echo "🐳 Recarregando os containers Docker na porta 4111..."
+            docker-compose up -d --build
+            
+            # 5. Limites e espaço (Opcional - limpa imagens desligadas para economizar disco do servidor)
+            docker image prune -f
+            
+            echo "✅ Deploy concluído com sucesso!"

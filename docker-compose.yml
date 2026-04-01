@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  galeria-pascoa:
+    build: .
+    container_name: projeto_fotografia_pascoa
+    ports:
+      - "4111:4111"
+    restart: always
+    env_file:
+      - .env
