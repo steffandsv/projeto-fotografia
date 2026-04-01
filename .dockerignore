@@ -6,6 +6,5 @@
 node_modules
 generate-albums.js
 Dockerfile
-nginx.conf
 README.md
 *.md
